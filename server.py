@@ -13,25 +13,23 @@ def generateQR(url):
     qr = pyqrcode.create(url)
 
     #save file as png/svg
-    png = qr.png("name_of_image.png", scale=4) # save the image of the QR code with name of the image
+    qr.png("name_of_image.png", scale=4) # save the image of the QR code with name of the image
     
-    image_array = np.array(png) # turn the image into a numpy array
+    image = Image.open("name_of_image.png")
+    image_array = np.array(image) # turn the image into a numpy array
     return image_array # returning the image
 
 serverSocket.listen (1)
 print (" Server listening on", IP , port )
 # Accept client ’s connection
-client_socket , client_address = port.accept()
+client_socket , client_address = serverSocket.accept()
 print (" Accepted connection from ", client_address)
 url = client_socket.recv(1024).decode()
 print (" Received from client ", url)
 
-image_matrix = generateQR(url)
-client_socket.send( image_matrix.encode())
-
-
 client_socket.close()
 serverSocket.close()
+
 '''
     these lines of codes represent the initialization of the socket of the server and the function
     generateQR(url) will generate the QR as a png image and will later on send the image to the client 
