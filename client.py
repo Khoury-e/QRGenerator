@@ -1,25 +1,62 @@
 import socket
-from PIL import Image # used to decode the image
-# use pip install pillow
-import numpy as np # pip install numpy
-server_ip = "localhost"
-server_port = 12345 # random socket number that is the server's sockrt number
-client_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM) #This code creates a TCP client socket for IPv4 communication
-client_socket.connect((server_ip,server_port)) #connecting to the server socket
-url = input("Please Enter the URL: ") #taking the url as input
-client_socket.send(url.encode()) # sending the url
+import sys
+import tkinter as tk
+from tkinter import Entry, Label, Button, Toplevel
+import threading
+from PIL import Image, ImageTk  # Pillow library for image processing
 
+def send_url():
+    url = url_entry.get()
+    client_socket.send(url.encode())
 
-image_matrix_str = client_socket.recv(1024).decode()  # receiving the 2D matrix from the server
-image_matrix = np.fromstring(image_matrix_str, dtype=np.uint8)
-#(assuming pixel values are in the range 0-255)
+    file = open("QR.png", "wb")
+    image_data = client_socket.recv(2048)
 
-# Recommended dimensions for a square grayscale image
-height, width = int(np.sqrt(len(image_matrix))), int(np.sqrt(len(image_matrix)))
-image_data = image_matrix.reshape((height, width))
+    while image_data:
+        file.write(image_data)
+        image_data = client_socket.recv(2048)
 
-image = Image.fromarray(image_data, mode="L")  # "L" for grayscale
-image.save("output_image.png")  # save the image
-image.show()  # load the image
+    file.close()
+
+    # Display QR code in a new window
+    qr_image = Image.open("QR.png")
+    qr_image = qr_image.resize((300, 300), Image.BILINEAR)
+    qr_photo = ImageTk.PhotoImage(qr_image)
+
+    qr_window = Toplevel()
+    qr_window.title("Generated QR Code")
+
+    label = tk.Label(qr_window, image=qr_photo)
+    label.image = qr_photo
+    label.pack()
+
+def create_gui():
+    window = tk.Tk()
+    window.title("QR Code Generator")
+    window.geometry("400x200")  # Set the size of the GUI
+
+    label = Label(window, text="Enter URL:")
+    label.pack(pady=10)
+
+    global url_entry
+    url_entry = Entry(window, width=30)
+    url_entry.pack(pady=10)
+
+    send_button = Button(window, text="Generate QR Code", command=send_url)
+    send_button.pack(pady=10)
+
+    window.mainloop()
+
+IP = "localhost"
+port = 12345
+
+client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+client_socket.connect((IP, port))
+
+gui_thread = threading.Thread(target=create_gui)
+gui_thread.start()
+
+gui_thread.join()
 
 client_socket.close()
+sys.exit()
