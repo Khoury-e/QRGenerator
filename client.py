@@ -1,9 +1,37 @@
 import socket
 import sys
 import tkinter as tk
-from tkinter import Entry, Label, Button, Toplevel
+from tkinter import Entry, Label, Button, Toplevel, messagebox
 import threading
 from PIL import Image, ImageTk  # Pillow library for image processing
+
+def send_credentials():
+    username = username_value.get()
+    password = password_value.get()
+    
+    # send username and password to server
+    client_socket.send(username.encode())
+    client_socket.send(password.encode())
+    
+    # get the response (grant permission/deny permission)
+    permission = client_socket.recv(1024).decode()
+    if permission.lower() == "granted":
+        login()
+    else:
+        tk.messagebox.showerror(message="Wrong username or password", title="Error In Log In")
+
+def login():
+    for widget in window.winfo_children():
+        widget.destroy()
+    label = Label(window, text="Enter URL:")
+    label.pack(pady=10)
+
+    global url_entry
+    url_entry = Entry(window, width=30)
+    url_entry.pack(pady=10)
+
+    send_button = Button(window, text="Generate QR Code", command=send_url)
+    send_button.pack(pady=10)
 
 def send_url():
     url = url_entry.get()
@@ -31,20 +59,30 @@ def send_url():
     label.pack()
 
 def create_gui():
+    global window
     window = tk.Tk()
     window.title("QR Code Generator")
     window.geometry("400x200")  # Set the size of the GUI
 
-    label = Label(window, text="Enter URL:")
-    label.pack(pady=10)
+    # handle sign in mechanism before granting access to generate QR Code
+    username = Label(window, text="Username:")
+    username.pack()
+    
+    global username_value 
+    global password_value
+    
+    username_value= Entry(window, width=30)
+    username_value.pack()
+    
+    password = Label(window, text="Password:")
+    password.pack()
 
-    global url_entry
-    url_entry = Entry(window, width=30)
-    url_entry.pack(pady=10)
-
-    send_button = Button(window, text="Generate QR Code", command=send_url)
-    send_button.pack(pady=10)
-
+    password_value = Entry(window, width=30)
+    password_value.pack()
+    
+    login_button = Button(window, text="Log In", command=send_credentials)
+    login_button.pack(pady=10)
+    
     window.mainloop()
 
 IP = "localhost"
