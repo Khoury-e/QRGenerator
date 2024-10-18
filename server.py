@@ -2,6 +2,7 @@ import socket
 import pyqrcode
 import threading
 import json 
+import png
 
 IP = "localhost"
 Port = 12345
